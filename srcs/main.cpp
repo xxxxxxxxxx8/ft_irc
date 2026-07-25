@@ -1,4 +1,5 @@
 #include "Server.hpp"
+#include "Debug.hpp"
 
 #include <iostream>
 #include <string>
@@ -40,6 +41,10 @@ int main(int argc, char *argv[])
 		std::cerr << "Error: password cannot be empty" << std::endl;
 		return 1;
 	}
+
+	// [debug] workflow step 0: arguments validated, the server can start
+	DBG("starting: port=" << port << " (password accepted, "
+		<< password.size() << " chars)");
 
 	// Any failure during setup/run is reported through exceptions.
 	try
