@@ -9,7 +9,10 @@ OBJDIR		= objs
 
 SRCS		= main.cpp \
 			  Server.cpp \
-			  Client.cpp
+			  Client.cpp \
+			  Channel.cpp \
+			  Commands.cpp \
+			  ChannelCommands.cpp
 
 OBJS		= $(addprefix $(OBJDIR)/, $(SRCS:.cpp=.o))
 
