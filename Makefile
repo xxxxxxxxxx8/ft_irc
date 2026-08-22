@@ -1,36 +1,28 @@
-NAME		= ircserv
+NAME     = ircserv
 
-CXX			= c++
-CXXFLAGS	= -Wall -Wextra -Werror -std=c++98
-INCLUDES	= -I includes
+CXX      = c++
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98
+INCLUDES = -I includes
 
-SRCDIR		= srcs
-OBJDIR		= objs
+SRCS     = srcs/main.cpp \
+           srcs/Server.cpp \
+           srcs/Client.cpp \
+           srcs/Channel.cpp \
+           srcs/ChannelCommands.cpp
 
-SRCS		= main.cpp \
-			  Server.cpp \
-			  Client.cpp \
-			  Channel.cpp \
-			  Commands.cpp \
-			  ChannelCommands.cpp
-
-OBJS		= $(addprefix $(OBJDIR)/, $(SRCS:.cpp=.o))
+OBJDIR   = obj
+OBJS     = $(SRCS:srcs/%.cpp=$(OBJDIR)/%.o)
 
 all: $(NAME)
-
-# Debug build: enables the DBG* macros of includes/Debug.hpp (traces on
-# stderr) and embeds debug symbols for gdb/valgrind. Always rebuilds from
-# scratch so debug and release objects are never mixed.
-# Go back to a normal build with: make re
-debug: CXXFLAGS += -DDEBUG_MODE -g3
-debug: fclean $(NAME)
 
 $(NAME): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(OBJS) -o $(NAME)
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
-	@mkdir -p $(OBJDIR)
+$(OBJDIR)/%.o: srcs/%.cpp | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
 
 clean:
 	rm -rf $(OBJDIR)
@@ -40,4 +32,4 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all clean fclean re debug
+.PHONY: all clean fclean re

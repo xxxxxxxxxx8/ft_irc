@@ -1,90 +1,63 @@
-#include "Client.hpp"
+#include "../includes/Client.hpp"
 
-Client::Client(int fd, const std::string &host)
-	: _fd(fd), _host(host), _passOk(false), _registered(false), _closing(false)
+Client::Client()
+	: _fd(-1), _passOk(false), _registered(false) {}
+
+Client::Client(int fd, const std::string &ip)
+	: _fd(fd), _ip(ip), _passOk(false), _registered(false) {}
+
+Client::Client(const Client &src)
+	: _fd(src._fd), _ip(src._ip), _buffer(src._buffer),
+	  _nickname(src._nickname), _username(src._username),
+	  _realname(src._realname), _passOk(src._passOk),
+	  _registered(src._registered) {}
+
+Client &Client::operator=(const Client &rhs)
 {
+	if (this != &rhs)
+	{
+		_fd = rhs._fd;
+		_ip = rhs._ip;
+		_buffer = rhs._buffer;
+		_nickname = rhs._nickname;
+		_username = rhs._username;
+		_realname = rhs._realname;
+		_passOk = rhs._passOk;
+		_registered = rhs._registered;
+	}
+	return (*this);
 }
 
-Client::~Client()
-{
-}
+Client::~Client() {}
 
-int Client::getFd() const
-{
-	return _fd;
-}
+int	Client::getFd() const { return (_fd); }
 
-const std::string &Client::getNickname() const
-{
-	return _nickname;
-}
+const std::string	&Client::getIp() const { return (_ip); }
 
-const std::string &Client::getUsername() const
-{
-	return _username;
-}
+const std::string	&Client::getBuffer() const { return (_buffer); }
 
-const std::string &Client::getHost() const
-{
-	return _host;
-}
+const std::string	&Client::getNickname() const { return (_nickname); }
 
-std::string Client::prefix() const
-{
-	return _nickname + "!" + _username + "@" + _host;
-}
+const std::string	&Client::getUsername() const { return (_username); }
 
-void Client::setNickname(const std::string &nickname)
-{
-	_nickname = nickname;
-}
+const std::string	&Client::getRealname() const { return (_realname); }
 
-void Client::setUsername(const std::string &username)
-{
-	_username = username;
-}
+bool	Client::hasPassword() const { return (_passOk); }
 
-void Client::setRealname(const std::string &realname)
-{
-	_realname = realname;
-}
+bool	Client::isRegistered() const { return (_registered); }
 
-bool Client::isPassOk() const
-{
-	return _passOk;
-}
+void	Client::setNickname(const std::string &nick) { _nickname = nick; }
 
-void Client::setPassOk(bool ok)
-{
-	_passOk = ok;
-}
+void	Client::setUsername(const std::string &user) { _username = user; }
 
-bool Client::isRegistered() const
-{
-	return _registered;
-}
+void	Client::setRealname(const std::string &real) { _realname = real; }
 
-void Client::setRegistered(bool registered)
-{
-	_registered = registered;
-}
+void	Client::setHasPassword(bool val) { _passOk = val; }
 
-bool Client::isClosing() const
-{
-	return _closing;
-}
+void	Client::setRegistered(bool val) { _registered = val; }
 
-void Client::setClosing(bool closing)
-{
-	_closing = closing;
-}
+void	Client::setBuffer(const std::string &buf) { _buffer = buf; }
 
-std::string &Client::recvBuffer()
-{
-	return _recvBuf;
-}
+void	Client::appendBuffer(const std::string &data) { _buffer += data; }
 
-std::string &Client::sendBuffer()
-{
-	return _sendBuf;
-}
+void	Client::clearBuffer() { _buffer.clear(); }
