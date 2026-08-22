@@ -1,7 +1,6 @@
 #ifndef SERVER_HPP
 # define SERVER_HPP
 
-# include "Client.hpp"
 # include <csignal>
 # include <map>
 # include <string>
@@ -9,6 +8,21 @@
 # include <poll.h>
 
 # define SERVER_NAME "ircserv"
+
+struct Client
+{
+	int			fd;
+	std::string	ip;
+	std::string	buffer;
+	std::string	nickname;
+	std::string	username;
+	bool		passOk;
+	bool		registered;
+
+	Client() : fd(-1), passOk(false), registered(false) {}
+	Client(int fd, const std::string &ip)
+		: fd(fd), ip(ip), passOk(false), registered(false) {}
+};
 
 class Server
 {

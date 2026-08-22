@@ -166,7 +166,7 @@ void	Server::handleClientData(int fd)
 	std::map<int, Client>::iterator it = _clients.find(fd);
 	if (it == _clients.end())
 		return ;
-	it->second.appendBuffer(std::string(buf, n));
+	it->second.buffer.append(buf, n);
 	// TODO: parse buffer for complete messages (\r\n)
 }
 
