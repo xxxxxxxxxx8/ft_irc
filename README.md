@@ -4,16 +4,11 @@
 
 ## Description
 
-ft_irc is an IRC server written in C++98. The goal is to understand the TCP/IP
-protocols that the Internet runs on by implementing a real text chat server
-that an actual IRC client can connect to and use.
+ft_irc is an IRC server written in C++98. IRC clients connect to it over TCP. Users can join channels and send private messages. The goal of the project is to learn the TCP/IP protocols by building a real chat server.
 
-The server handles many clients at the same time from a single thread. There is
-no forking and no blocking I/O: every socket is non-blocking and one `poll()`
-call drives everything — accepting connections, reading, and writing. Because
-TCP is a byte stream and not a sequence of messages, incoming bytes are
-accumulated per client and only complete lines are executed, so a command split
-across several packets is rebuilt before it runs.
+The server runs in one thread and serves many clients at the same time. It does not fork and it never blocks. All sockets are non-blocking. One `poll()` call drives all the work: accept, read and write.
+
+TCP gives a stream of bytes, not messages. The server keeps the bytes of each client in a separate buffer. It runs a command only when the full line has arrived. A command that is split over several packets is rebuilt first.
 
 ## Features
 
@@ -21,52 +16,52 @@ Registration and messaging:
 
 | Command | Description |
 | --- | --- |
-| `PASS` | Give the server password. |
+| `PASS` | Send the server password. |
 | `NICK` | Set or change the nickname. |
-| `USER` | Set the username and real name. |
-| `PRIVMSG` | Message a user, or a channel (forwarded to every other member). |
-| `JOIN` | Join a channel, creating it if needed. The creator becomes operator. |
-| `PING` | Answered with `PONG`. |
+| `USER` | Set the username. |
+| `PRIVMSG` | Send a message to a user or to a channel. The server forwards a channel message to all other members. |
+| `JOIN` | Join a channel. The server creates the channel if it does not exist. The first client to join becomes an operator. |
+| `PING` | The server answers with `PONG`. |
 
 Channel operator commands:
 
 | Command | Description |
 | --- | --- |
-| `KICK` | Eject a client from the channel. |
-| `INVITE` | Invite a client to a channel. |
-| `TOPIC` | Change or view the channel topic. |
+| `KICK` | Remove a client from the channel. |
+| `INVITE` | Invite a client to the channel. |
+| `TOPIC` | Show or change the channel topic. |
 | `MODE` | Change the channel mode. |
 
 Channel modes, all implemented:
 
 | Mode | Description |
 | --- | --- |
-| `i` | Invite-only: joining requires an invitation. |
-| `t` | Only operators may change the topic. |
-| `k` | Channel key, required to join. |
-| `o` | Give or take channel operator privilege. |
-| `l` | User limit on the channel. |
+| `i` | Invite-only. A client must be invited to join. |
+| `t` | Only operators can change the topic. |
+| `k` | The channel has a key. A client must give the key to join. |
+| `o` | Give or remove operator status. |
+| `l` | Limit the number of members. |
 
 ## Instructions
 
-Build (no external library is needed):
+Build the server. No external library is needed.
 
 ```sh
 make
 ```
 
-Other rules: `make clean`, `make fclean`, `make re`.
+The Makefile also has the rules `clean`, `fclean` and `re`.
 
-Run:
+Run the server:
 
 ```sh
 ./ircserv <port> <password>
 ```
 
-- `port` — the TCP port to listen on, 1024 to 65535.
-- `password` — the password every client must send with `PASS`.
+- `port`: the TCP port to listen on. Use a value from 1024 to 65535.
+- `password`: the password that each client must send with `PASS`.
 
-Connect with the reference client, irssi:
+Connect with irssi, the reference client:
 
 ```sh
 irssi -c 127.0.0.1 -p 6667 -w <password> -n <nickname>
@@ -74,7 +69,7 @@ irssi -c 127.0.0.1 -p 6667 -w <password> -n <nickname>
 /msg <nickname> hello
 ```
 
-Or by hand with netcat:
+You can also connect by hand with netcat:
 
 ```sh
 nc -C 127.0.0.1 6667
@@ -87,22 +82,10 @@ PRIVMSG #test :hello everyone
 
 ## Technical choices
 
-- **One `poll()` for everything.** The listening socket and every client socket
-  live in the same pollfd vector. `recv()` runs only when `POLLIN` is reported,
-  `send()` only when `POLLOUT` is reported, and `accept()` only when the
-  listening socket is readable. Nothing ever touches a file descriptor that
-  `poll()` has not declared ready.
-- **Two buffers per client.** Received bytes go into an input buffer and are
-  cut into lines on `\n`, leaving any partial line for the next read; both
-  `\r\n` and a bare `\n` are accepted. Replies are never sent immediately, they
-  are appended to an output buffer that is flushed when the socket becomes
-  writable, which also handles a partial `send()`.
-- **Registration is a gate.** A client must send `PASS`, `NICK` and `USER`
-  before anything else works. Only then is `001` sent. A wrong password is
-  answered with `464` and the link is closed once that reply has been flushed.
-- **Channels hold file descriptors,** not pointers to clients, so a
-  disconnecting client cannot leave a dangling reference behind. A channel is
-  destroyed as soon as its last member leaves.
+- **One `poll()` for everything.** The listening socket and all client sockets are in the same pollfd vector. The server calls `recv()` only after `poll()` reports `POLLIN`. It calls `send()` only after `poll()` reports `POLLOUT`. It calls `accept()` only when the listening socket is ready.
+- **Two buffers for each client.** The server adds the bytes it reads to an input buffer. It then cuts the buffer into lines at each `\n` and keeps the last partial line for the next read. It accepts `\r\n` and a single `\n`. The server never sends a reply at once. It adds the reply to an output buffer and sends that buffer when the socket is ready to write. This also handles a partial `send()`.
+- **Registration is a gate.** A client must send `PASS`, `NICK` and `USER` before it can use any other command. The server then sends `001`. If the password is wrong, the server sends `464` and closes the connection after that reply is sent.
+- **Channels store file descriptors.** A channel stores file descriptors, not pointers to clients. A client that disconnects cannot leave an invalid pointer behind. The server deletes a channel when the last member leaves.
 
 ## Resources
 
@@ -112,12 +95,4 @@ PRIVMSG #test :hello everyone
 - [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/)
 - `man 2 poll`, `man 2 socket`, `man 2 recv`, `man 2 send`, `man 2 fcntl`
 
-**How AI was used.** AI (Claude) was used to summarise the IRC RFCs and the
-subject, to help design and write the line parser, the per-client buffering,
-the `poll()` read/write loop and the command handlers, and to generate the test
-programs used during development: unit tests that feed fake strings to the
-parser and the buffer, an end-to-end test that drives the server over real
-sockets through every required command and error case, and a fuzz test that
-throws malformed and random binary input at it. AI was also used to check the
-behaviour against the reference client and to run the code under valgrind. Every
-generated line was reviewed, tested and is understood by the authors.
+**How AI was used.** AI was used to summarise the IRC RFCs and the subject, to help design and plan the project. AI was also used to check the behaviour against the reference client and to run the code under valgrind.
