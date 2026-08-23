@@ -26,6 +26,7 @@ class Server
 		static std::string	toLower(const std::string &s);
 
 		void	updateEvents();
+		void	handleEvents(int fd, short events);
 		void	acceptClient();
 		void	readClient(int fd);
 		void	flushClient(int fd);

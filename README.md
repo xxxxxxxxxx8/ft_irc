@@ -1,4 +1,4 @@
-*This project has been created as part of the 42 curriculum by mmouqtad, mtarza.*
+*This project has been created as part of the 42 curriculum by mmouqtad, mtarza, mohel-am.*
 
 # ft_irc
 
@@ -58,7 +58,7 @@ Run the server:
 ./ircserv <port> <password>
 ```
 
-- `port`: the TCP port to listen on. Use a value from 1024 to 65535.
+- `port`: the TCP port to listen on. Use a value from 1 to 65535. A port below 1024 needs root rights.
 - `password`: the password that each client must send with `PASS`.
 
 Connect with irssi, the reference client:

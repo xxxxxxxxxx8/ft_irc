@@ -56,7 +56,7 @@ void	Server::init()
 	addr.sin_addr.s_addr = INADDR_ANY;
 	addr.sin_port = htons(static_cast<uint16_t>(_port));
 	if (bind(_sockfd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-		throw std::runtime_error("bind() failed, port probably in use");
+		throw std::runtime_error("bind() failed, port in use or not permitted");
 	if (listen(_sockfd, SOMAXCONN) < 0)
 		throw std::runtime_error("listen() failed");
 
@@ -102,24 +102,37 @@ void	Server::run()
 
 			if (events == 0)
 				continue ;
-			if (fd == _sockfd)
+			try
 			{
-				if (events & POLLIN)
-					acceptClient();
-				continue ;
+				handleEvents(fd, events);
 			}
-			if (events & POLLIN)
-				readClient(fd);
-			if (_clients.count(fd) && (events & POLLOUT))
-				flushClient(fd);
-			if (_clients.count(fd)
-				&& (events & (POLLERR | POLLHUP | POLLNVAL)))
-				dropClient(fd);
-			if (_clients.count(fd) == 0)
+			catch (const std::exception &e)
+			{
+				std::cerr << "fd " << fd << ": " << e.what() << std::endl;
+				if (fd != _sockfd)
+					dropClient(fd);
+			}
+			if (fd != _sockfd && _clients.count(fd) == 0)
 				i--;
 		}
 	}
 	shutdown();
+}
+
+void	Server::handleEvents(int fd, short events)
+{
+	if (fd == _sockfd)
+	{
+		if (events & POLLIN)
+			acceptClient();
+		return ;
+	}
+	if (events & POLLIN)
+		readClient(fd);
+	if (_clients.count(fd) && (events & POLLOUT))
+		flushClient(fd);
+	if (_clients.count(fd) && (events & (POLLERR | POLLHUP | POLLNVAL)))
+		dropClient(fd);
 }
 
 void	Server::acceptClient()

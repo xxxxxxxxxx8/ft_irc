@@ -14,7 +14,7 @@ static bool	is_valid_port(const std::string &s, int &port)
 			return (false);
 	}
 	long n = std::strtol(s.c_str(), NULL, 10);
-	if (n < 1024 || n > 65535)
+	if (n < 1 || n > 65535)
 		return (false);
 	port = static_cast<int>(n);
 	return (true);
@@ -31,7 +31,7 @@ int	main(int ac, char **av)
 	int	port = 0;
 	if (!is_valid_port(av[1], port))
 	{
-		std::cerr << "Error: port must be between 1024 and 65535" << std::endl;
+		std::cerr << "Error: port must be between 1 and 65535" << std::endl;
 		return (1);
 	}
 

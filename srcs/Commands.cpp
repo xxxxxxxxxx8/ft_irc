@@ -20,7 +20,7 @@ void	Server::handleLine(Client &client, const std::string &line)
 		return ;
 	std::cout << "[fd " << client.getFd() << "] " << line << std::endl;
 
-	if (msg.command == "CAP")
+	if (msg.command == "CAP" || msg.command == "WHO")
 		return ;
 	if (msg.command == "PASS")
 		cmdPass(client, msg.params);
