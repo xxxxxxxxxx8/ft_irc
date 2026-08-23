@@ -114,9 +114,8 @@ void	Server::tryRegister(Client &client)
 
 void	Server::cmdPing(Client &client, const std::vector<std::string> &params)
 {
-	if (params.empty())
-		return (reply(client, "409", ":No origin specified"));
-	client.queue(":" SERVER_NAME " PONG " SERVER_NAME " :" + params[0]);
+	if (!params.empty())
+		client.queue(":" SERVER_NAME " PONG " SERVER_NAME " :" + params[0]);
 }
 
 void	Server::cmdPrivmsg(Client &client,

@@ -186,6 +186,8 @@ void	Server::applyMode(Client &client, Channel &channel, char mode,
 			return (reply(client, "461", "MODE :Not enough parameters"));
 		value = params[arg++];
 	}
+	else if (mode == 'k' && arg < params.size())
+		value = params[arg++];
 	if (mode == 'i')
 		channel.setInviteOnly(adding);
 	else if (mode == 't')
