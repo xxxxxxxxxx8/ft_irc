@@ -154,9 +154,8 @@ void	Server::handleNewConnection()
 void	Server::handleClientData(int fd)
 {
 	char	buf[1024];
-	std::memset(buf, 0, sizeof(buf));
 
-	ssize_t	n = recv(fd, buf, sizeof(buf) - 1, 0);
+	ssize_t	n = recv(fd, buf, sizeof(buf), 0);
 	if (n <= 0)
 	{
 		dropClient(fd, n == 0 ? "client disconnected" : "recv() error");
@@ -166,8 +165,17 @@ void	Server::handleClientData(int fd)
 	std::map<int, Client>::iterator it = _clients.find(fd);
 	if (it == _clients.end())
 		return ;
-	it->second.buffer.append(buf, n);
-	// TODO: parse buffer for complete messages (\r\n)
+
+	Client		&client = it->second;
+	std::string	line;
+
+	client.appendData(buf, n);
+	while (!client.isClosing() && client.getNextLine(line))
+		handleLine(client, line);
+	if (client.isClosing())
+		dropClient(fd, "closing link");
+	else if (client.bufferOverflow())
+		dropClient(fd, "input line too long");
 }
 
 /*	send	*/

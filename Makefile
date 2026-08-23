@@ -5,7 +5,14 @@ CXXFLAGS = -Wall -Wextra -Werror -std=c++98
 INCLUDES = -I includes
 
 SRCS     = srcs/main.cpp \
-           srcs/Server.cpp
+           srcs/Server.cpp \
+           srcs/Client.cpp \
+           srcs/Parser.cpp \
+           srcs/Commands.cpp
+
+HEADERS  = includes/Server.hpp \
+           includes/Client.hpp \
+           includes/Parser.hpp
 
 OBJDIR   = obj
 OBJS     = $(SRCS:srcs/%.cpp=$(OBJDIR)/%.o)
@@ -15,7 +22,7 @@ all: $(NAME)
 $(NAME): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(OBJS) -o $(NAME)
 
-$(OBJDIR)/%.o: srcs/%.cpp | $(OBJDIR)
+$(OBJDIR)/%.o: srcs/%.cpp $(HEADERS) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
 $(OBJDIR):
