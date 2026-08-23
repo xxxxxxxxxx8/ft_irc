@@ -1,12 +1,11 @@
 #include "../includes/Server.hpp"
 #include "../includes/Parser.hpp"
-#include <iostream>
 
 static bool	isValidNick(const std::string &nick)
 {
 	if (nick.empty())
 		return (false);
-	if (nick.find_first_of(" ,!@") != std::string::npos)
+	if (nick.find_first_of(" !@") != std::string::npos)
 		return (false);
 	return (nick[0] != ':' && nick[0] != '#' && nick[0] != '&');
 }
@@ -16,11 +15,7 @@ void	Server::handleLine(Client &client, const std::string &line)
 	Message	msg;
 
 	parseMessage(line, msg);
-	if (msg.command.empty())
-		return ;
-	std::cout << "[fd " << client.getFd() << "] " << line << std::endl;
-
-	if (msg.command == "CAP" || msg.command == "WHO")
+	if (msg.command.empty() || msg.command == "CAP" || msg.command == "WHO")
 		return ;
 	if (msg.command == "PASS")
 		cmdPass(client, msg.params);
@@ -69,10 +64,10 @@ void	Server::cmdNick(Client &client, const std::vector<std::string> &params)
 
 	Client	*other = findClientByNick(nick);
 
-	if (other == &client)
-		return ;
-	if (other != NULL)
+	if (other != NULL && other != &client)
 		return (reply(client, "433", nick + " :Nickname is already in use"));
+	if (nick == client.getNickname())
+		return ;
 	if (client.isRegistered())
 	{
 		std::string	msg = ":" + client.prefix() + " NICK :" + nick;
@@ -88,7 +83,7 @@ void	Server::cmdUser(Client &client, const std::vector<std::string> &params)
 {
 	if (client.isRegistered())
 		return (reply(client, "462", ":You may not reregister"));
-	if (params.size() < 4)
+	if (params.size() < 4 || params[0].empty())
 		return (reply(client, "461", "USER :Not enough parameters"));
 	client.setUsername(params[0]);
 	tryRegister(client);
@@ -106,8 +101,6 @@ void	Server::tryRegister(Client &client)
 		return ;
 	}
 	client.setRegistered(true);
-	std::cout << "fd " << client.getFd() << " registered as "
-		<< client.prefix() << std::endl;
 	reply(client, "001", ":Welcome to the " SERVER_NAME " Network, "
 		+ client.prefix());
 }

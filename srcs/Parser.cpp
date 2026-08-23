@@ -1,4 +1,5 @@
 #include "../includes/Parser.hpp"
+#include <cstddef>
 #include <cctype>
 
 void	parseMessage(const std::string &line, Message &msg)

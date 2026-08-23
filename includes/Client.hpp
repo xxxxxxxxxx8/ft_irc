@@ -4,7 +4,8 @@
 # include <cstddef>
 # include <string>
 
-# define MAX_LINE_LEN 512
+# define INPUT_LIMIT 8192
+# define OUTPUT_LIMIT 1048576
 
 class Client
 {
@@ -20,11 +21,7 @@ class Client
 		bool		_closing;
 
 	public:
-		Client();
 		Client(int fd, const std::string &ip);
-		Client(const Client &src);
-		Client	&operator=(const Client &rhs);
-		~Client();
 
 		int					getFd() const;
 		const std::string	&getNickname() const;
@@ -43,7 +40,6 @@ class Client
 
 		void	appendData(const char *data, size_t len);
 		bool	getNextLine(std::string &line);
-		bool	inputTooLong() const;
 
 		void				queue(const std::string &msg);
 		bool				hasOutput() const;

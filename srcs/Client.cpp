@@ -1,35 +1,7 @@
 #include "../includes/Client.hpp"
 
-Client::Client()
-	: _fd(-1), _passOk(false), _registered(false), _closing(false) {}
-
 Client::Client(int fd, const std::string &ip)
 	: _fd(fd), _ip(ip), _passOk(false), _registered(false), _closing(false) {}
-
-Client::Client(const Client &src)
-	: _fd(src._fd), _ip(src._ip), _in(src._in), _out(src._out),
-	  _nickname(src._nickname), _username(src._username),
-	  _passOk(src._passOk),
-	  _registered(src._registered), _closing(src._closing) {}
-
-Client	&Client::operator=(const Client &rhs)
-{
-	if (this != &rhs)
-	{
-		_fd = rhs._fd;
-		_ip = rhs._ip;
-		_in = rhs._in;
-		_out = rhs._out;
-		_nickname = rhs._nickname;
-		_username = rhs._username;
-		_passOk = rhs._passOk;
-		_registered = rhs._registered;
-		_closing = rhs._closing;
-	}
-	return (*this);
-}
-
-Client::~Client() {}
 
 int	Client::getFd() const { return (_fd); }
 
@@ -60,30 +32,33 @@ void	Client::setClosing(bool val) { _closing = val; }
 
 void	Client::appendData(const char *data, size_t len)
 {
-	_in.append(data, len);
+	if (_in.size() + len > INPUT_LIMIT)
+		_closing = true;
+	else
+		_in.append(data, len);
 }
 
 bool	Client::getNextLine(std::string &line)
 {
-	std::string::size_type	pos = _in.find('\n');
+	std::string::size_type	newline = _in.find('\n');
+	std::string::size_type	carriage;
 
-	if (pos == std::string::npos)
+	if (newline == std::string::npos)
 		return (false);
-	line = _in.substr(0, pos);
-	_in.erase(0, pos + 1);
-	if (!line.empty() && line[line.size() - 1] == '\r')
-		line.erase(line.size() - 1);
+	line = _in.substr(0, newline);
+	_in.erase(0, newline + 1);
+	carriage = line.find('\r');
+	if (carriage != std::string::npos)
+		line.erase(carriage);
 	return (true);
-}
-
-bool	Client::inputTooLong() const
-{
-	return (_in.size() > MAX_LINE_LEN);
 }
 
 void	Client::queue(const std::string &msg)
 {
-	_out += msg + "\r\n";
+	if (_out.size() + msg.size() > OUTPUT_LIMIT)
+		_closing = true;
+	else
+		_out += msg + "\r\n";
 }
 
 bool	Client::hasOutput() const { return (!_out.empty()); }

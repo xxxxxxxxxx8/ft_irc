@@ -1,19 +1,23 @@
 #include "../includes/Server.hpp"
-#include <iostream>
-#include <cstdlib>
 #include <cctype>
+#include <cstddef>
+#include <cstdlib>
+#include <exception>
+#include <iostream>
 #include <string>
 
-static bool	is_valid_port(const std::string &s, int &port)
+static bool	isValidPort(const std::string &s, int &port)
 {
-	if (s.empty() || s.length() > 5)
+	long	n;
+
+	if (s.empty())
 		return (false);
 	for (size_t i = 0; i < s.length(); i++)
 	{
 		if (!std::isdigit(static_cast<unsigned char>(s[i])))
 			return (false);
 	}
-	long n = std::strtol(s.c_str(), NULL, 10);
+	n = std::strtol(s.c_str(), NULL, 10);
 	if (n < 1 || n > 65535)
 		return (false);
 	port = static_cast<int>(n);
@@ -22,29 +26,22 @@ static bool	is_valid_port(const std::string &s, int &port)
 
 int	main(int ac, char **av)
 {
+	int	port = 0;
+
 	if (ac != 3)
 	{
 		std::cerr << "Usage: ./ircserv <port> <password>" << std::endl;
 		return (1);
 	}
-
-	int	port = 0;
-	if (!is_valid_port(av[1], port))
+	if (!isValidPort(av[1], port))
 	{
 		std::cerr << "Error: port must be between 1 and 65535" << std::endl;
 		return (1);
 	}
-
-	std::string	pass(av[2]);
-	if (pass.empty())
-	{
-		std::cerr << "Error: password can't be empty" << std::endl;
-		return (1);
-	}
-
 	try
 	{
-		Server	serv(port, pass);
+		Server	serv(port, av[2]);
+
 		serv.init();
 		serv.run();
 	}

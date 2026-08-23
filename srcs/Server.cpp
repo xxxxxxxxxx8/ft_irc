@@ -1,7 +1,9 @@
 #include "../includes/Server.hpp"
-#include <iostream>
-#include <stdexcept>
+#include <cctype>
 #include <cstring>
+#include <set>
+#include <stdexcept>
+#include <utility>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/socket.h>
@@ -26,10 +28,8 @@ std::string	Server::toLower(const std::string &s)
 	std::string	out(s);
 
 	for (size_t i = 0; i < out.size(); i++)
-	{
-		if (out[i] >= 'A' && out[i] <= 'Z')
-			out[i] = static_cast<char>(out[i] + 32);
-	}
+		out[i] = static_cast<char>(std::tolower(
+				static_cast<unsigned char>(out[i])));
 	return (out);
 }
 
@@ -54,7 +54,7 @@ void	Server::init()
 	std::memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
 	addr.sin_addr.s_addr = INADDR_ANY;
-	addr.sin_port = htons(static_cast<uint16_t>(_port));
+	addr.sin_port = htons(static_cast<unsigned short>(_port));
 	if (bind(_sockfd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
 		throw std::runtime_error("bind() failed, port in use or not permitted");
 	if (listen(_sockfd, SOMAXCONN) < 0)
@@ -64,59 +64,24 @@ void	Server::init()
 	pfd.events = POLLIN;
 	pfd.revents = 0;
 	_pollfds.push_back(pfd);
-	std::cout << "Listening on port " << _port << std::endl;
 }
 
-void	Server::updateEvents()
+void	Server::setPollEvents()
 {
 	for (size_t i = 0; i < _pollfds.size(); i++)
 	{
 		std::map<int, Client>::iterator	it = _clients.find(_pollfds[i].fd);
+		short							events = POLLIN;
 
-		if (it == _clients.end())
+		if (it != _clients.end())
 		{
-			_pollfds[i].events = POLLIN;
-			continue ;
+			if (it->second.isClosing())
+				events = 0;
+			if (it->second.hasOutput())
+				events |= POLLOUT;
 		}
-		_pollfds[i].events = it->second.isClosing() ? 0 : POLLIN;
-		if (it->second.hasOutput())
-			_pollfds[i].events |= POLLOUT;
+		_pollfds[i].events = events;
 	}
-}
-
-void	Server::run()
-{
-	while (_running)
-	{
-		updateEvents();
-		if (poll(&_pollfds[0], _pollfds.size(), -1) < 0)
-		{
-			if (!_running)
-				break ;
-			continue ;
-		}
-		for (size_t i = 0; i < _pollfds.size(); i++)
-		{
-			short	events = _pollfds[i].revents;
-			int		fd = _pollfds[i].fd;
-
-			if (events == 0)
-				continue ;
-			try
-			{
-				handleEvents(fd, events);
-			}
-			catch (const std::exception &e)
-			{
-				std::cerr << "fd " << fd << ": " << e.what() << std::endl;
-				if (fd != _sockfd)
-					dropClient(fd);
-			}
-			if (fd != _sockfd && _clients.count(fd) == 0)
-				i--;
-		}
-	}
-	shutdown();
 }
 
 void	Server::handleEvents(int fd, short events)
@@ -129,10 +94,39 @@ void	Server::handleEvents(int fd, short events)
 	}
 	if (events & POLLIN)
 		readClient(fd);
-	if (_clients.count(fd) && (events & POLLOUT))
+	if (events & POLLOUT)
 		flushClient(fd);
-	if (_clients.count(fd) && (events & (POLLERR | POLLHUP | POLLNVAL)))
+	if (events & (POLLERR | POLLHUP | POLLNVAL))
 		dropClient(fd);
+}
+
+void	Server::run()
+{
+	while (_running)
+	{
+		size_t	i = 0;
+
+		setPollEvents();
+		if (poll(&_pollfds[0], _pollfds.size(), -1) < 0)
+			continue ;
+		while (i < _pollfds.size())
+		{
+			int		fd = _pollfds[i].fd;
+			short	events = _pollfds[i].revents;
+
+			try
+			{
+				handleEvents(fd, events);
+			}
+			catch (const std::exception &)
+			{
+				if (fd != _sockfd)
+					dropClient(fd);
+			}
+			if (i < _pollfds.size() && _pollfds[i].fd == fd)
+				i++;
+		}
+	}
 }
 
 void	Server::acceptClient()
@@ -149,26 +143,17 @@ void	Server::acceptClient()
 		close(fd);
 		return ;
 	}
+	_clients.insert(std::make_pair(fd, Client(fd, inet_ntoa(addr.sin_addr))));
 	pfd.fd = fd;
 	pfd.events = POLLIN;
 	pfd.revents = 0;
 	_pollfds.push_back(pfd);
-
-	std::string	ip = inet_ntoa(addr.sin_addr);
-	_clients.insert(std::make_pair(fd, Client(fd, ip)));
-	std::cout << "fd " << fd << " connected from " << ip << std::endl;
 }
 
 void	Server::readClient(int fd)
 {
 	char	buf[1024];
 	ssize_t	n = recv(fd, buf, sizeof(buf), 0);
-
-	if (n <= 0)
-	{
-		dropClient(fd);
-		return ;
-	}
 
 	std::map<int, Client>::iterator	it = _clients.find(fd);
 	if (it == _clients.end())
@@ -177,11 +162,15 @@ void	Server::readClient(int fd)
 	Client		&client = it->second;
 	std::string	line;
 
-	client.appendData(buf, static_cast<size_t>(n));
-	while (!client.isClosing() && client.getNextLine(line))
-		handleLine(client, line);
-	if (client.inputTooLong()
-		|| (client.isClosing() && !client.hasOutput()))
+	if (n <= 0)
+		client.setClosing(true);
+	else
+	{
+		client.appendData(buf, static_cast<size_t>(n));
+		while (!client.isClosing() && client.getNextLine(line))
+			handleLine(client, line);
+	}
+	if (client.isClosing() && !client.hasOutput())
 		dropClient(fd);
 }
 
@@ -223,17 +212,15 @@ void	Server::dropClient(int fd)
 {
 	std::map<int, Client>::iterator	it = _clients.find(fd);
 
-	if (it != _clients.end())
-	{
-		if (it->second.isRegistered())
-			broadcastToPeers(it->second, ":" + it->second.prefix()
-				+ " QUIT :Connection closed");
-		removeFromChannels(fd);
-		std::cout << "fd " << fd << " disconnected" << std::endl;
-	}
+	if (it == _clients.end())
+		return ;
+	if (it->second.isRegistered())
+		broadcastToPeers(it->second, ":" + it->second.prefix()
+			+ " QUIT :Connection closed");
+	removeFromChannels(fd);
 	close(fd);
 	removePollfd(fd);
-	_clients.erase(fd);
+	_clients.erase(it);
 }
 
 void	Server::removePollfd(int fd)
