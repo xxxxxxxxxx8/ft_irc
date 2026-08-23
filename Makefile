@@ -7,11 +7,14 @@ INCLUDES = -I includes
 SRCS     = srcs/main.cpp \
            srcs/Server.cpp \
            srcs/Client.cpp \
+           srcs/Channel.cpp \
            srcs/Parser.cpp \
-           srcs/Commands.cpp
+           srcs/Commands.cpp \
+           srcs/ChannelCommands.cpp
 
 HEADERS  = includes/Server.hpp \
            includes/Client.hpp \
+           includes/Channel.hpp \
            includes/Parser.hpp
 
 OBJDIR   = obj

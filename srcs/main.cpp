@@ -46,7 +46,7 @@ int	main(int ac, char **av)
 	{
 		Server	serv(port, pass);
 		serv.init();
-		serv.loop();
+		serv.run();
 	}
 	catch (const std::exception &e)
 	{

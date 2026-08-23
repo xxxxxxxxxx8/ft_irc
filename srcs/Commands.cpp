@@ -1,17 +1,6 @@
 #include "../includes/Server.hpp"
 #include "../includes/Parser.hpp"
 #include <iostream>
-#include <cctype>
-
-static std::string	toLower(const std::string &s)
-{
-	std::string	out(s);
-
-	for (size_t i = 0; i < out.size(); i++)
-		out[i] = static_cast<char>(std::tolower(
-				static_cast<unsigned char>(out[i])));
-	return (out);
-}
 
 static bool	isValidNick(const std::string &nick)
 {
@@ -20,33 +9,6 @@ static bool	isValidNick(const std::string &nick)
 	if (nick.find_first_of(" ,!@") != std::string::npos)
 		return (false);
 	return (nick[0] != ':' && nick[0] != '#' && nick[0] != '&');
-}
-
-Client	*Server::findClientByNick(const std::string &nick)
-{
-	std::string	target = toLower(nick);
-
-	if (target.empty())
-		return (NULL);
-	for (std::map<int, Client>::iterator it = _clients.begin();
-		it != _clients.end(); ++it)
-	{
-		if (toLower(it->second.getNickname()) == target)
-			return (&it->second);
-	}
-	return (NULL);
-}
-
-void	Server::reply(Client &client, const std::string &code,
-	const std::string &text)
-{
-	std::string	nick = client.getNickname();
-
-	if (nick.empty())
-		nick = "*";
-
-	sendReply(client.getFd(), ":" SERVER_NAME " " + code + " " + nick + " "
-		+ text + "\r\n");
 }
 
 void	Server::handleLine(Client &client, const std::string &line)
@@ -58,7 +20,7 @@ void	Server::handleLine(Client &client, const std::string &line)
 		return ;
 	std::cout << "[fd " << client.getFd() << "] " << line << std::endl;
 
-	if (msg.command == "CAP" || msg.command == "PONG")
+	if (msg.command == "CAP")
 		return ;
 	if (msg.command == "PASS")
 		cmdPass(client, msg.params);
@@ -68,12 +30,20 @@ void	Server::handleLine(Client &client, const std::string &line)
 		cmdUser(client, msg.params);
 	else if (msg.command == "PING")
 		cmdPing(client, msg.params);
-	else if (msg.command == "QUIT")
-		cmdQuit(client, msg.params);
 	else if (!client.isRegistered())
 		reply(client, "451", ":You have not registered");
 	else if (msg.command == "PRIVMSG")
 		cmdPrivmsg(client, msg.params);
+	else if (msg.command == "JOIN")
+		cmdJoin(client, msg.params);
+	else if (msg.command == "KICK")
+		cmdKick(client, msg.params);
+	else if (msg.command == "INVITE")
+		cmdInvite(client, msg.params);
+	else if (msg.command == "TOPIC")
+		cmdTopic(client, msg.params);
+	else if (msg.command == "MODE")
+		cmdMode(client, msg.params);
 	else
 		reply(client, "421", msg.command + " :Unknown command");
 }
@@ -104,8 +74,12 @@ void	Server::cmdNick(Client &client, const std::vector<std::string> &params)
 	if (other != NULL)
 		return (reply(client, "433", nick + " :Nickname is already in use"));
 	if (client.isRegistered())
-		sendReply(client.getFd(), ":" + client.prefix() + " NICK :" + nick
-			+ "\r\n");
+	{
+		std::string	msg = ":" + client.prefix() + " NICK :" + nick;
+
+		client.queue(msg);
+		broadcastToPeers(client, msg);
+	}
 	client.setNickname(nick);
 	tryRegister(client);
 }
@@ -117,7 +91,6 @@ void	Server::cmdUser(Client &client, const std::vector<std::string> &params)
 	if (params.size() < 4)
 		return (reply(client, "461", "USER :Not enough parameters"));
 	client.setUsername(params[0]);
-	client.setRealname(params[3]);
 	tryRegister(client);
 }
 
@@ -143,16 +116,7 @@ void	Server::cmdPing(Client &client, const std::vector<std::string> &params)
 {
 	if (params.empty())
 		return (reply(client, "409", ":No origin specified"));
-	sendReply(client.getFd(), ":" SERVER_NAME " PONG " SERVER_NAME " :"
-		+ params[0] + "\r\n");
-}
-
-void	Server::cmdQuit(Client &client, const std::vector<std::string> &params)
-{
-	std::string	reason = params.empty() ? "Client quit" : params[0];
-
-	sendReply(client.getFd(), "ERROR :Closing link (" + reason + ")\r\n");
-	client.setClosing(true);
+	client.queue(":" SERVER_NAME " PONG " SERVER_NAME " :" + params[0]);
 }
 
 void	Server::cmdPrivmsg(Client &client,
@@ -163,10 +127,25 @@ void	Server::cmdPrivmsg(Client &client,
 	if (params.size() < 2 || params[1].empty())
 		return (reply(client, "412", ":No text to send"));
 
-	Client	*target = findClientByNick(params[0]);
+	const std::string	&target = params[0];
 
-	if (target == NULL)
-		return (reply(client, "401", params[0] + " :No such nick/channel"));
-	sendReply(target->getFd(), ":" + client.prefix() + " PRIVMSG "
-		+ target->getNickname() + " :" + params[1] + "\r\n");
+	if (target[0] == '#' || target[0] == '&')
+	{
+		Channel	*channel = findChannel(target);
+
+		if (channel == NULL)
+			return (reply(client, "403", target + " :No such channel"));
+		if (!channel->isMember(client.getFd()))
+			return (reply(client, "404", channel->getName()
+				+ " :Cannot send to channel"));
+		return (broadcast(*channel, ":" + client.prefix() + " PRIVMSG "
+			+ channel->getName() + " :" + params[1], client.getFd()));
+	}
+
+	Client	*dest = findClientByNick(target);
+
+	if (dest == NULL)
+		return (reply(client, "401", target + " :No such nick/channel"));
+	dest->queue(":" + client.prefix() + " PRIVMSG " + dest->getNickname()
+		+ " :" + params[1]);
 }
