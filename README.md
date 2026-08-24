@@ -12,35 +12,44 @@ TCP gives a stream of bytes, not messages. The server keeps the bytes of each cl
 
 ## Features
 
+Every command below is implemented by the server. The irssi column shows how to reach it from the reference client.
+
 Registration and messaging:
 
-| Command | Description |
-| --- | --- |
-| `PASS` | Send the server password. |
-| `NICK` | Set or change the nickname. |
-| `USER` | Set the username. |
-| `PRIVMSG` | Send a message to a user or to a channel. The server forwards a channel message to all other members. |
-| `JOIN` | Join a channel. The server creates the channel if it does not exist. The first client to join becomes an operator. |
-| `PING` | The server answers with `PONG`. |
+| Command | In irssi | Description |
+| --- | --- | --- |
+| `PASS` | `irssi -c 127.0.0.1 -p 6667 -w <password> -n <nick>` | Send the server password. irssi sends it while it connects, so you never type it. |
+| `NICK` | `/nick <nickname>` | Set or change the nickname. |
+| `USER` | sent by irssi while it connects | Set the username. Change what irssi sends with `/set user_name <name>` before you connect. |
+| `JOIN` | `/join #channel` or `/join #channel <key>` | Join a channel. The server creates the channel if it does not exist, and the first client to join becomes an operator. |
+| `PRIVMSG` | type in the channel window, or `/msg #channel <text>` | Send a message to a channel. The server forwards it to every other member. |
+| `PRIVMSG` | `/msg <nickname> <text>` | Send a private message to one user. |
+| `PING` | sent by irssi on its own | The server answers with `PONG`. |
 
-Channel operator commands:
+Channel operator commands. A user who is not an operator gets `482` from all four:
 
-| Command | Description |
-| --- | --- |
-| `KICK` | Remove a client from the channel. |
-| `INVITE` | Invite a client to the channel. |
-| `TOPIC` | Show or change the channel topic. |
-| `MODE` | Change the channel mode. |
+| Command | In irssi | Description |
+| --- | --- | --- |
+| `KICK` | `/kick #channel <nickname> [reason]` | Remove a client from the channel. |
+| `INVITE` | `/invite <nickname> #channel` | Invite a client to the channel. |
+| `TOPIC` | `/topic <text>` to change it, `/quote TOPIC #channel` to read it | Show or change the channel topic. |
+| `MODE` | `/mode #channel <modes>` | Change the channel mode, see the table below. |
 
-Channel modes, all implemented:
+Channel modes, all five implemented:
 
-| Mode | Description |
-| --- | --- |
-| `i` | Invite-only. A client must be invited to join. |
-| `t` | Only operators can change the topic. |
-| `k` | The channel has a key. A client must give the key to join. |
-| `o` | Give or remove operator status. |
-| `l` | Limit the number of members. |
+| Mode | In irssi | Description |
+| --- | --- | --- |
+| `i` | `/mode #channel +i` and `/mode #channel -i` | Invite-only. A client must be invited to join, and is refused with `473`. |
+| `t` | `/mode #channel +t` and `/mode #channel -t` | Only operators can change the topic. Everyone else gets `482`. |
+| `k` | `/mode #channel +k <key>` and `/mode #channel -k` | The channel has a key. A client that does not give it is refused with `475`. `-k` takes no key. |
+| `o` | `/op <nickname>` and `/deop <nickname>` | Give or take operator status. Both directions need the nickname. |
+| `l` | `/mode #channel +l <number>` and `/mode #channel -l` | Limit the number of members. A client that arrives when the channel is full is refused with `471`. `-l` removes the limit. |
+
+`/mode #channel` on its own asks the server for the modes that are set and is answered with `324`. Only a member may ask, so that the channel key stays private.
+
+Three notes on irssi itself. `/kick`, `/invite` and `/mode` use the channel of the active window when you leave the channel out, so name the channel to be safe. `/topic` with no text prints what irssi remembers and sends nothing, which is why the table gives `/quote TOPIC #channel` instead. `/help` and `/names` are answered by irssi alone and never reach the server.
+
+Any other command is answered with `421`.
 
 ## Instructions
 
