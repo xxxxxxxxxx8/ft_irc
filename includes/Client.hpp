@@ -5,7 +5,7 @@
 # include <string>
 
 # define INPUT_LIMIT 8192
-# define OUTPUT_LIMIT 1048576
+# define OUTPUT_LIMIT 8388608
 
 class Client
 {
