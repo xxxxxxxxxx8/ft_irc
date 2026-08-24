@@ -1,6 +1,5 @@
 #include "../includes/Parser.hpp"
 #include <cstddef>
-#include <cctype>
 
 void	parseMessage(const std::string &line, Message &msg)
 {
@@ -29,6 +28,8 @@ void	parseMessage(const std::string &line, Message &msg)
 			msg.params.push_back(line.substr(start, i - start));
 	}
 	for (size_t j = 0; j < msg.command.size(); j++)
-		msg.command[j] = static_cast<char>(std::toupper(
-				static_cast<unsigned char>(msg.command[j])));
+	{
+		if (msg.command[j] >= 'a' && msg.command[j] <= 'z')
+			msg.command[j] = static_cast<char>(msg.command[j] - ('a' - 'A'));
+	}
 }

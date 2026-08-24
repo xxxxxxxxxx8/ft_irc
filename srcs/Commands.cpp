@@ -15,7 +15,7 @@ void	Server::handleLine(Client &client, const std::string &line)
 	Message	msg;
 
 	parseMessage(line, msg);
-	if (msg.command.empty() || msg.command == "CAP" || msg.command == "WHO")
+	if (msg.command.empty())
 		return ;
 	if (msg.command == "PASS")
 		cmdPass(client, msg.params);
@@ -23,8 +23,6 @@ void	Server::handleLine(Client &client, const std::string &line)
 		cmdNick(client, msg.params);
 	else if (msg.command == "USER")
 		cmdUser(client, msg.params);
-	else if (msg.command == "PING")
-		cmdPing(client, msg.params);
 	else if (!client.isRegistered())
 		reply(client, "451", ":You have not registered");
 	else if (msg.command == "PRIVMSG")
@@ -105,11 +103,6 @@ void	Server::tryRegister(Client &client)
 		+ client.prefix());
 }
 
-void	Server::cmdPing(Client &client, const std::vector<std::string> &params)
-{
-	if (!params.empty())
-		client.queue(":" SERVER_NAME " PONG " SERVER_NAME " :" + params[0]);
-}
 
 void	Server::cmdPrivmsg(Client &client,
 	const std::vector<std::string> &params)

@@ -1,5 +1,4 @@
 #include "../includes/Server.hpp"
-#include <cctype>
 #include <cstring>
 #include <set>
 #include <stdexcept>
@@ -28,8 +27,10 @@ std::string	Server::toLower(const std::string &s)
 	std::string	out(s);
 
 	for (size_t i = 0; i < out.size(); i++)
-		out[i] = static_cast<char>(std::tolower(
-				static_cast<unsigned char>(out[i])));
+	{
+		if (out[i] >= 'A' && out[i] <= 'Z')
+			out[i] = static_cast<char>(out[i] + ('a' - 'A'));
+	}
 	return (out);
 }
 

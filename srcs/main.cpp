@@ -1,5 +1,4 @@
 #include "../includes/Server.hpp"
-#include <cctype>
 #include <cstddef>
 #include <cstdlib>
 #include <exception>
@@ -14,7 +13,7 @@ static bool	isValidPort(const std::string &s, int &port)
 		return (false);
 	for (size_t i = 0; i < s.length(); i++)
 	{
-		if (!std::isdigit(static_cast<unsigned char>(s[i])))
+		if (s[i] < '0' || s[i] > '9')
 			return (false);
 	}
 	n = std::strtol(s.c_str(), NULL, 10);
@@ -29,15 +28,9 @@ int	main(int ac, char **av)
 	int	port = 0;
 
 	if (ac != 3)
-	{
-		std::cerr << "Usage: ./ircserv <port> <password>" << std::endl;
-		return (1);
-	}
+		return (std::cerr << "Usage: ./ircserv <port> <password>" << std::endl, 1);
 	if (!isValidPort(av[1], port))
-	{
-		std::cerr << "Error: port must be between 1 and 65535" << std::endl;
-		return (1);
-	}
+		return (std::cerr << "Error: port must be between 1 and 65535" << std::endl, 1);
 	try
 	{
 		Server	serv(port, av[2]);
