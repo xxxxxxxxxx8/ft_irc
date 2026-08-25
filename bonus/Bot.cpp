@@ -57,17 +57,13 @@ void IrcBot::sendDccFile(const std::string& receiverNick) {
     
     sendToServer(ctcp.str());
 
-    if (fork() == 0) {
-        int clientSocket = accept(dccSocket, NULL, NULL);
-        if (clientSocket >= 0) {
-            std::ifstream infile(filename.c_str());
-            std::string content((std::istreambuf_iterator<char>(infile)), 
-                                 std::istreambuf_iterator<char>());
-            send(clientSocket, content.c_str(), content.length(), 0);
-            close(clientSocket);
-        }
-        close(dccSocket);
-        exit(0);
+    int clientSocket = accept(dccSocket, NULL, NULL);
+    if (clientSocket >= 0) {
+        std::ifstream infile(filename.c_str());
+        std::string content((std::istreambuf_iterator<char>(infile)), 
+                             std::istreambuf_iterator<char>());
+        send(clientSocket, content.c_str(), content.length(), 0);
+        close(clientSocket);
     }
     close(dccSocket);
 }
