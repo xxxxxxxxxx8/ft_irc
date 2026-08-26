@@ -41,15 +41,13 @@ void	Client::appendData(const char *data, size_t len)
 bool	Client::getNextLine(std::string &line)
 {
 	std::string::size_type	newline = _in.find('\n');
-	std::string::size_type	carriage;
 
 	if (newline == std::string::npos)
 		return (false);
 	line = _in.substr(0, newline);
 	_in.erase(0, newline + 1);
-	carriage = line.find('\r');
-	if (carriage != std::string::npos)
-		line.erase(carriage);
+	if (!line.empty() && line[line.size() - 1] == '\r')
+		line.erase(line.size() - 1);
 	return (true);
 }
 

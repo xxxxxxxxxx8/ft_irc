@@ -28,7 +28,6 @@ class Channel
 		size_t				getLimit() const;
 		bool				isInviteOnly() const;
 		bool				isTopicLocked() const;
-		std::string			modeString() const;
 
 		void	setTopic(const std::string &topic);
 		void	setKey(const std::string &key);

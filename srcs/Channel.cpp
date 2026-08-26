@@ -1,5 +1,4 @@
 #include "../includes/Channel.hpp"
-#include <sstream>
 
 Channel::Channel()
 	: _limit(0), _inviteOnly(false), _topicLocked(false) {}
@@ -18,28 +17,6 @@ size_t	Channel::getLimit() const { return (_limit); }
 bool	Channel::isInviteOnly() const { return (_inviteOnly); }
 
 bool	Channel::isTopicLocked() const { return (_topicLocked); }
-
-std::string	Channel::modeString() const
-{
-	std::string			flags = "+";
-	std::ostringstream	params;
-
-	if (_inviteOnly)
-		flags += "i";
-	if (_topicLocked)
-		flags += "t";
-	if (!_key.empty())
-	{
-		flags += "k";
-		params << " " << _key;
-	}
-	if (_limit > 0)
-	{
-		flags += "l";
-		params << " " << _limit;
-	}
-	return (flags + params.str());
-}
 
 void	Channel::setTopic(const std::string &topic) { _topic = topic; }
 

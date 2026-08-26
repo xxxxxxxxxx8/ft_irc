@@ -242,8 +242,7 @@ void	Server::cmdMode(Client &client, const std::vector<std::string> &params)
 		return (reply(client, "442", channel->getName()
 			+ " :You're not on that channel"));
 	if (params.size() < 2)
-		return (reply(client, "324", channel->getName() + " "
-			+ channel->modeString()));
+		return ;
 	if (!channel->isOperator(client.getFd()))
 		return (reply(client, "482", channel->getName()
 			+ " :You're not channel operator"));
