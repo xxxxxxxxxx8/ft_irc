@@ -54,6 +54,7 @@ class Server
 		void	cmdPass(Client &client, const std::vector<std::string> &params);
 		void	cmdNick(Client &client, const std::vector<std::string> &params);
 		void	cmdUser(Client &client, const std::vector<std::string> &params);
+		void	cmdPing(Client &client, const std::vector<std::string> &params);
 		void	cmdPrivmsg(Client &client,
 				const std::vector<std::string> &params);
 		void	cmdJoin(Client &client, const std::vector<std::string> &params);
