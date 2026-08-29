@@ -6,8 +6,6 @@ void	parseMessage(const std::string &line, Message &msg)
 	size_t	i = 0;
 	size_t	start;
 
-	msg.command.clear();
-	msg.params.clear();
 	while (i < line.size())
 	{
 		while (i < line.size() && line[i] == ' ')
