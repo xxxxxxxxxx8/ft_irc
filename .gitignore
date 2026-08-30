@@ -1,4 +1,6 @@
 obj/
 ircserv
+bot
+bot_gift.txt
 nvim.log
 .claude/

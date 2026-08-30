@@ -53,7 +53,7 @@ void IrcBot::sendDccFile(const std::string& receiverNick) {
     
     std::ostringstream ctcp;
     ctcp << "PRIVMSG " << receiverNick << " :\001DCC SEND " 
-         << filename << " " << ipAsInt << " " << myPort << " 74\001";
+         << filename << " " << ipAsInt << " " << myPort << " 70\001";
     
     sendToServer(ctcp.str());
 
