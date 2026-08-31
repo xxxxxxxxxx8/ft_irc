@@ -26,7 +26,7 @@ Registration and messaging:
 | `PRIVMSG` | `/msg <nickname> <text>` | Send a private message to one user. |
 | `PING` | sent by irssi on its own | The server answers with `PONG`. |
 
-Channel operator commands. A user who is not an operator gets `482` from all four:
+Channel operator commands. A user who is not an operator gets `482` from `KICK`, `INVITE` and `MODE`. `TOPIC` only needs operator status while the channel is `+t`:
 
 | Command | In irssi | Description |
 | --- | --- | --- |
@@ -44,8 +44,6 @@ Channel modes, all five implemented:
 | `k` | `/mode #channel +k <key>` and `/mode #channel -k` | The channel has a key. A client that does not give it is refused with `475`. `-k` takes no key. |
 | `o` | `/op <nickname>` and `/deop <nickname>` | Give or take operator status. Both directions need the nickname. |
 | `l` | `/mode #channel +l <number>` and `/mode #channel -l` | Limit the number of members. A client that arrives when the channel is full is refused with `471`. `-l` removes the limit. |
-
-`/mode #channel` on its own asks the server for the modes that are set and is answered with `324`. Only a member may ask, so that the channel key stays private.
 
 Three notes on irssi itself. `/kick`, `/invite` and `/mode` use the channel of the active window when you leave the channel out, so name the channel to be safe. `/topic` with no text prints what irssi remembers and sends nothing, which is why the table gives `/quote TOPIC #channel` instead. `/help` and `/names` are answered by irssi alone and never reach the server.
 
